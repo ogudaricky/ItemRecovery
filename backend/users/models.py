@@ -12,6 +12,7 @@ class User(AbstractUser):
         (ADMIN, "Admin"),
     ]
 
+    email = models.EmailField(unique=True)
     role = models.CharField(max_length=16, choices=ROLE_CHOICES, default=STUDENT)
     department = models.CharField(max_length=120, blank=True)
     phone_number = models.CharField(max_length=32, blank=True)
