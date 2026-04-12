@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from items.models import LostItem
+from notifications.utils import create_notification
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -45,7 +46,12 @@ class ItemMatchViewSet(viewsets.ReadOnlyModelViewSet):
         if not (request.user.is_staff or lost_item.user_id == request.user.id):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        rebuild_matches_for_lost(lost_item)
+        count = rebuild_matches_for_lost(lost_item)
+        if count:
+            create_notification(
+                lost_item.user,
+                f'{count} potential match(es) found for your lost item "{lost_item.name}".',
+            )
         matches = (
             ItemMatch.objects.select_related("lost_item__user", "found_item__user")
             .filter(lost_item=lost_item)
