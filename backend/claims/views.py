@@ -39,6 +39,15 @@ class ItemClaimViewSet(
             return ItemClaimCreateSerializer
         return ItemClaimSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        claim = serializer.instance
+        output = ItemClaimSerializer(claim, context={"request": request})
+        headers = self.get_success_headers(output.data)
+        return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def get_permissions(self):
         if self.action == "verify":
             return [permissions.IsAuthenticated(), IsStaff()]
