@@ -7,15 +7,26 @@ from .serializers import UserSerializer
 User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
+            return User.objects.all()
+        if user.is_authenticated:
+            return User.objects.filter(pk=user.pk)
+        return User.objects.none()
 
     def get_permissions(self):
         if self.action == "create":
-            return [permissions.AllowAny()]
-        if self.action == "me":
-            return [permissions.IsAuthenticated()]
-        return [permissions.IsAuthenticated()]
+            permission_classes = [permissions.AllowAny]
+        elif self.action == "me":
+            permission_classes = [permissions.IsAuthenticated]
+        elif self.action == "list":
+            permission_classes = [permissions.IsAdminUser]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     @action(detail=False, methods=["get"])
     def me(self, request):
