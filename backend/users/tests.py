@@ -63,7 +63,8 @@ class UserApiTests(APITestCase):
         url = reverse("user-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("results", response.data)
+        self.assertIsInstance(response.data, list)
+        self.assertGreaterEqual(len(response.data), 1)
 
     def test_login_endpoint_returns_user(self):
         user = User.objects.create_user(
