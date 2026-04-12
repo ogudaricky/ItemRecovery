@@ -1,7 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 from items.models import FoundItem, LostItem
 from matches.models import ItemMatch
+from notifications.utils import create_notification
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,6 +11,8 @@ from rest_framework.response import Response
 from .models import ItemClaim
 from .permissions import IsClaimantOrStaff, IsStaff
 from .serializers import ItemClaimCreateSerializer, ItemClaimSerializer
+
+User = get_user_model()
 
 
 class ItemClaimViewSet(
@@ -60,6 +64,13 @@ class ItemClaimViewSet(
             claimant=self.request.user,
             verification_method=ItemClaim.ADMIN_REVIEW,
         )
+        claim = serializer.instance
+        lost_name = claim.match.lost_item.name
+        for staff in User.objects.filter(is_staff=True):
+            create_notification(
+                staff,
+                f'New claim #{claim.pk} pending review (lost item: "{lost_name}").',
+            )
 
     @action(detail=True, methods=["post"], url_path="verify")
     def verify(self, request, pk=None):
@@ -77,6 +88,9 @@ class ItemClaimViewSet(
             )
 
         now = timezone.now()
+        claimant = claim.claimant
+        finder = claim.match.found_item.user
+        found_name = claim.match.found_item.name
         if decision == "rejected":
             with transaction.atomic():
                 claim.status = ItemClaim.REJECTED
@@ -98,6 +112,21 @@ class ItemClaimViewSet(
                 LostItem.objects.filter(pk=match.lost_item_id).update(
                     status=LostItem.RESOLVED,
                 )
+
+        if decision == "rejected":
+            create_notification(
+                claimant,
+                "Your claim was rejected by an administrator.",
+            )
+        else:
+            create_notification(
+                claimant,
+                "Your claim was approved. Follow campus procedures to collect your item.",
+            )
+            create_notification(
+                finder,
+                f'Your found item "{found_name}" was matched and resolved.',
+            )
 
         fresh = self.get_queryset().get(pk=claim.pk)
         serializer = ItemClaimSerializer(fresh, context={"request": request})
