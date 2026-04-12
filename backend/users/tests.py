@@ -87,3 +87,17 @@ class UserApiTests(APITestCase):
         url = reverse("user-logout")
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_login_fails_with_invalid_password(self):
+        User.objects.create_user(
+            username="student6",
+            email="student6@example.com",
+            password="correcthorse",
+        )
+        url = reverse("user-login")
+        response = self.client.post(
+            url,
+            {"username": "student6", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
