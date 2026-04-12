@@ -1,3 +1,9 @@
-from django.test import TestCase
+from django.apps import apps
+from django.test import SimpleTestCase
 
-# Create your tests here.
+
+class NotificationsAppTests(SimpleTestCase):
+    """Placeholders until notification models and APIs exist."""
+
+    def test_notifications_app_is_installed(self):
+        self.assertTrue(apps.is_installed("notifications"))
