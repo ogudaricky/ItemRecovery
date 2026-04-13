@@ -10,7 +10,7 @@ export async function login(payload: LoginPayload): Promise<User> {
 
 export async function logout(): Promise<void> {
   await apiRequest<void>("/api/auth/logout/", {
-    method: "POST",
+    method: "GET",
   });
 }
 
