@@ -31,8 +31,9 @@ def login_view(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @permission_classes([permissions.IsAuthenticated])
+@csrf_exempt
 def logout_view(request):
     logout(request)
     return Response(status=status.HTTP_204_NO_CONTENT)
